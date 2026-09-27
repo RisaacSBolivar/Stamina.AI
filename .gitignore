@@ -1,0 +1,60 @@
+# --- Secretos ---------------------------------------------------------------
+.env
+.env.*
+
+# --- Entornos de Python -----------------------------------------------------
+# Los comentarios van en su propia linea a proposito: en .gitignore la
+# almohadilla solo comenta al principio, y al final forma parte del patron.
+#
+# Sin barra final a proposito: en WSL backend/.venv puede ser un ENLACE a
+# ~/.stamina-cache/venv (en ext4, mucho mas rapido que /mnt/c), y un patron con
+# barra solo casa con carpetas. Con `backend/.venv/` el enlace entraba en el commit.
+backend/.venv
+.venv
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# --- Node / Angular ---------------------------------------------------------
+# node_modules y .angular tambien son enlaces a ~/.stamina-cache: sin barra final.
+node_modules
+frontend/dist/
+frontend/.angular
+frontend/openapi.json
+backend/openapi.json
+npm-debug.log*
+
+# --- El notebook de investigacion NO va en este repositorio ----------------
+# Se entrega aparte (el .ipynb, y sus datos en una carpeta de Drive) y vive en
+# ../Stamina.AI-notebook/. Estas reglas son una guarda para que no vuelva a
+# colarse: el repo es backend, frontend y README.
+*.ipynb
+.ipynb_checkpoints/
+notebooks/
+
+# --- Datos personales -------------------------------------------------------
+# Los .FIT llevan GPS y frecuencia cardiaca. Las pruebas usan .FIT sinteticos
+# (backend/tests/fit_sintetico.py) y una copia minima de splits.parquet en
+# backend/tests/datos/, que no trae coordenadas.
+*.fit
+!backend/tests/datos/salidas/entrenamiento_atenas.fit
+
+# data/ en la raiz es residuo de corridas viejas.
+/data/
+
+# --- Binarios ajenos al proyecto --------------------------------------------
+*.exe
+
+# --- Sistema y editores -----------------------------------------------------
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.swp

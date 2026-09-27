@@ -1,0 +1,76 @@
+[project]
+name = "stamina-backend"
+version = "0.1.0"
+description = "Stamina.AI - API de estrategia de ritmo sobre el pipeline validado en el notebook de investigación"
+readme = "README.md"
+requires-python = ">=3.12"
+
+# Pisos, no versiones ajustadas. Los dos primeros son requisito de
+# compatibilidad medido, no una preferencia: `backend/modelo/metadata.joblib`
+# lo escribio pandas 3.0.5 / scikit-learn 1.9.0, y con pandas 2.x la carga falla
+# en el StringDtype del indice de `limites`.
+dependencies = [
+    "pandas>=3.0",
+    "scikit-learn>=1.9",
+    "numpy>=2.0",
+    "joblib>=1.4",
+    "pyarrow>=17.0",        # backend de parquet para la cache de data/procesado
+    "gpxpy>=1.6",
+    "fitparse>=1.2",
+    "haversine>=2.8",
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
+    "pydantic>=2.9",
+    "pydantic-settings>=2.6",
+    "python-multipart>=0.0.12",  # subida de .FIT y .GPX por multipart
+    "garminconnect>=0.2.25",
+]
+
+[project.optional-dependencies]
+# La red convolucional solo hace falta si un artefacto la eligio. Con el
+# historial actual la regla de capacidad nunca la asigna, asi que TensorFlow
+# queda fuera del entorno normal: son cientos de MB y segundos de arranque.
+red = ["tensorflow>=2.18"]
+dev = [
+    "pytest>=8.3",
+    "pytest-asyncio>=0.24",
+    "httpx>=0.28",
+    "ruff>=0.8",
+    # Solo para `make marca`: recorta el logo y genera los favicon. Sus salidas
+    # se versionan, asi que esto no corre en ningun build.
+    "pillow>=11.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["stamina_core", "app"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+asyncio_mode = "auto"
+# El artefacto lo escribio scikit-learn 1.9.0 y el entorno tiene 1.9.1, asi que
+# cada uno de los 300 arboles del bosque avisa al deserializarse: ~65 000 lineas
+# que tapan cualquier fallo real. Se silencia SOLO esa clase, no los avisos en
+# general: las predicciones se verificaron identicas pese al aviso.
+filterwarnings = [
+    "ignore::sklearn.exceptions.InconsistentVersionWarning",
+    # fitparse llama a datetime.utcfromtimestamp(), deprecado en Python 3.12, una
+    # vez por registro leido: ~127 000 avisos al parsear los 492 archivos. Es
+    # codigo de terceros que no podemos arreglar desde aqui.
+    "ignore:datetime.datetime.utcfromtimestamp:DeprecationWarning:fitparse.processors",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+ignore = [
+    "B008",  # FastAPI usa Depends() en los defaults
+    "E501",  # el ancho lo controla el formateador
+]

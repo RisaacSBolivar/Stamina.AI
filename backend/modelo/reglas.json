@@ -1,0 +1,137 @@
+{
+ "version": "6.0",
+ "creado": "2026-09-25T18:42:44",
+ "origen": "metadata.joblib",
+ "reglas": {
+  "maratón": [
+   {
+    "desde_horas": 1.7933333333333332,
+    "sesiones": 6,
+    "maratones": 0,
+    "mejor bruto": "RandomForest",
+    "modelo": "Ritmo constante",
+    "nivel": 0,
+    "habilidad": 0.0
+   },
+   {
+    "desde_horas": 4.9527777777777775,
+    "sesiones": 17,
+    "maratones": 0,
+    "mejor bruto": "RandomForest",
+    "modelo": "Ritmo constante",
+    "nivel": 0,
+    "habilidad": 0.0
+   },
+   {
+    "desde_horas": 9.995277777777778,
+    "sesiones": 36,
+    "maratones": 0,
+    "mejor bruto": "CNN-Híbrida",
+    "modelo": "Base física",
+    "nivel": 1,
+    "habilidad": 0.221
+   },
+   {
+    "desde_horas": 19.85388888888889,
+    "sesiones": 79,
+    "maratones": 0,
+    "mejor bruto": "CNN-Híbrida",
+    "modelo": "RandomForest",
+    "nivel": 2,
+    "habilidad": 0.125
+   },
+   {
+    "desde_horas": 39.37583333333334,
+    "sesiones": 157,
+    "maratones": 0,
+    "mejor bruto": "RandomForest",
+    "modelo": "Base física",
+    "nivel": 1,
+    "habilidad": 0.209
+   },
+   {
+    "desde_horas": 79.81361111111111,
+    "sesiones": 343,
+    "maratones": 0,
+    "mejor bruto": "RandomForest",
+    "modelo": "RandomForest",
+    "nivel": 2,
+    "habilidad": 0.217
+   },
+   {
+    "desde_horas": 124.7236111111111,
+    "sesiones": 454,
+    "maratones": 1,
+    "mejor bruto": "RandomForest",
+    "modelo": "RandomForest",
+    "nivel": 2,
+    "habilidad": 0.303
+   }
+  ],
+  "carrera de 10-12 km": [
+   {
+    "desde_horas": 1.7933333333333332,
+    "sesiones": 6,
+    "maratones": 0,
+    "mejor bruto": "Ridge",
+    "modelo": "Ridge",
+    "nivel": 2,
+    "habilidad": 0.18
+   },
+   {
+    "desde_horas": 4.9527777777777775,
+    "sesiones": 17,
+    "maratones": 0,
+    "mejor bruto": "Ridge",
+    "modelo": "Base física",
+    "nivel": 1,
+    "habilidad": 0.059
+   },
+   {
+    "desde_horas": 9.995277777777778,
+    "sesiones": 36,
+    "maratones": 0,
+    "mejor bruto": "Ridge",
+    "modelo": "Ritmo constante",
+    "nivel": 0,
+    "habilidad": 0.0
+   },
+   {
+    "desde_horas": 19.85388888888889,
+    "sesiones": 79,
+    "maratones": 0,
+    "mejor bruto": "Ridge",
+    "modelo": "Ritmo constante",
+    "nivel": 0,
+    "habilidad": 0.0
+   },
+   {
+    "desde_horas": 39.37583333333334,
+    "sesiones": 157,
+    "maratones": 0,
+    "mejor bruto": "Ridge",
+    "modelo": "Ritmo constante",
+    "nivel": 0,
+    "habilidad": 0.0
+   },
+   {
+    "desde_horas": 79.81361111111111,
+    "sesiones": 343,
+    "maratones": 0,
+    "mejor bruto": "Ridge",
+    "modelo": "Base física",
+    "nivel": 1,
+    "habilidad": 0.007
+   },
+   {
+    "desde_horas": 124.7236111111111,
+    "sesiones": 454,
+    "maratones": 1,
+    "mejor bruto": "Ridge",
+    "modelo": "Ritmo constante",
+    "nivel": 0,
+    "habilidad": 0.0
+   }
+  ]
+ }
+}

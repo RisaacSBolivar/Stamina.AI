@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Stamina.AI</title>
+  <base href="/">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Estrategia de ritmo kilómetro a kilómetro para tu carrera, a partir de tu propio historial.">
+  <meta name="theme-color" content="#11223d">
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <script>
+    // Antes de que arranque Angular, para que recargar en modo oscuro no
+    // ensene un fogonazo blanco. Misma clave que usa TemaService.
+    try {
+      var t = localStorage.getItem('stamina.tema');
+      if (t !== 'claro' && t !== 'oscuro') {
+        t = matchMedia('(prefers-color-scheme: dark)').matches ? 'oscuro' : 'claro';
+      }
+      document.documentElement.dataset.tema = t;
+    } catch (e) {}
+  </script>
+</head>
+<body>
+  <app-root></app-root>
+</body>
+</html>

@@ -1,0 +1,372 @@
+<div class="mx-auto max-w-5xl px-4 py-6">
+  @if (estado.error(); as mensaje) {
+    <div class="aviso-error mb-4 flex items-start justify-between gap-3">
+      <span>{{ mensaje }}</span>
+      <button class="shrink-0 font-bold" (click)="estado.limpiarError()" aria-label="Cerrar">
+        ×
+      </button>
+    </div>
+  }
+
+  @if (!estado.reglasCargadas()) {
+    <div class="aviso-error mb-4">
+      <strong>El servicio no está listo:</strong> no se pudo cargar la regla de capacidad, así
+      que todavía no se puede calcular ninguna estrategia.
+    </div>
+  }
+
+  <!-- Paso 1 — Historial -->
+  <section class="tarjeta mb-4">
+    <header class="mb-3 flex items-center gap-3">
+      <span class="paso-numero" [class.paso-numero--hecho]="estado.hayHistorial()">1</span>
+      <h2 class="text-lg font-semibold">Tu historial de carrera</h2>
+    </header>
+
+    @if (estado.historial(); as historial) {
+      <div class="grid grid-cols-3 gap-4">
+        <div>
+          <p class="cifra text-2xl font-bold">{{ historial.resumen.sesiones }}</p>
+          <p class="text-xs" style="color: var(--color-tinta-suave)">sesiones</p>
+        </div>
+        <div>
+          <p class="cifra text-2xl font-bold">{{ historial.resumen.km_totales.toFixed(0) }}</p>
+          <p class="text-xs" style="color: var(--color-tinta-suave)">km recorridos</p>
+        </div>
+        <div>
+          <p class="text-sm font-semibold">{{ periodoHistorial() }}</p>
+          <p class="text-xs" style="color: var(--color-tinta-suave)">periodo</p>
+        </div>
+      </div>
+
+      @if (estado.capacidad(); as cap) {
+        <div class="mt-4">
+          <app-medidor-evidencia [capacidad]="cap" />
+        </div>
+      }
+
+      <details class="mt-1 text-sm">
+        <summary class="cursor-pointer" style="color: var(--color-tinta-media)">
+          {{ controlCalidad().validas }} sesiones válidas
+          @if (controlCalidad().descartadas) {
+            · {{ controlCalidad().descartadas }} descartadas
+          }
+        </summary>
+        <ul class="mt-2 space-y-1 text-xs" style="color: var(--color-tinta-media)">
+          @for (d of controlCalidad().descartes; track d.etiqueta) {
+            <li><span class="cifra font-semibold">{{ d.n }}</span> {{ d.etiqueta }}</li>
+          }
+          @if (!controlCalidad().descartes.length) {
+            <li>Todas pasaron el control de calidad.</li>
+          }
+        </ul>
+      </details>
+
+      <button class="btn btn-secundario mt-3" (click)="omitirHistorial()">
+        Usar otro historial
+      </button>
+    } @else {
+      <!-- Apagada mientras el historial esté llegando: aceptar una subida a
+           mano encima de una descarga de Garmin dejaría dos procesos peleando
+           por el mismo paso. Misma señal que apaga el botón de calcular. -->
+      <app-zona-soltar
+        etiqueta="Arrastra tus archivos .FIT"
+        ayuda="o haz clic para elegirlos"
+        acepta=".fit"
+        [esperando]="estado.entradaEnCurso()"
+        (archivos)="subirHistorial($event)"
+      />
+
+      <p class="mt-3 text-sm" style="color: var(--color-tinta-media)">
+        @if (estado.umbral(); as umbral) {
+          Personaliza a partir de <strong>{{ estado.horas(umbral.horas) }}</strong> de historial.
+          <span
+            class="info"
+            tabindex="0"
+            title="Con menos horas el sistema devuelve ritmo constante y te dice por qué. Cuantas más subas, mejor se ajusta a tu forma de correr."
+            aria-label="Con menos horas el sistema devuelve ritmo constante y te dice por qué."
+            >i</span
+          >
+        }
+      </p>
+
+      @if (estado.garminDisponible()) {
+        <button class="btn btn-secundario mt-3" (click)="mostrarGarmin.set(!mostrarGarmin())">
+          {{ mostrarGarmin() ? 'Ocultar Garmin' : 'Conectar con Garmin Connect' }}
+        </button>
+      } @else {
+        <p class="mt-2 text-sm" style="color: var(--color-tinta-media)">
+          ¿Usas Garmin? Exporta tus actividades en formato original (.FIT) desde Garmin Connect.
+          <span
+            class="info"
+            tabindex="0"
+            title="La conexión directa con Garmin necesita una sesión en el servidor y solo está en la versión local de Stamina.AI."
+            aria-label="La conexión directa con Garmin solo está en la versión local."
+            >i</span
+          >
+        </p>
+      }
+    }
+
+    @if (mostrarGarmin() && estado.garminDisponible()) {
+      <div id="panel-garmin" class="mt-3">
+        <app-dialogo-garmin />
+      </div>
+    }
+  </section>
+
+  <!-- Paso 2 — Ruta -->
+  <section class="tarjeta mb-4">
+    <header class="mb-3 flex items-center gap-3">
+      <span class="paso-numero" [class.paso-numero--hecho]="estado.hayRuta()">2</span>
+      <h2 class="text-lg font-semibold">La ruta de tu carrera</h2>
+    </header>
+
+    @if (estado.gpx(); as gpx) {
+      <p class="text-sm">
+        <strong>{{ gpx.name }}</strong>
+        @if (estado.kmRuta(); as km) {
+          <span style="color: var(--color-tinta-media)"> · {{ km.toFixed(1) }} km</span>
+        }
+      </p>
+      <button class="btn btn-secundario mt-3" (click)="estado.gpx.set(null)">Cambiar ruta</button>
+    } @else {
+      <app-zona-soltar
+        etiqueta="Arrastra el .GPX de la ruta"
+        ayuda="el recorrido de la carrera que vas a correr"
+        acepta=".gpx"
+        [multiple]="false"
+        (archivos)="cargarRuta($event)"
+      />
+    }
+  </section>
+
+  <!-- Paso 3 — Objetivo -->
+  <section class="tarjeta mb-4" [class.tarjeta--inactiva]="!estado.hayRuta()">
+    <header class="mb-3 flex items-center gap-3">
+      <span class="paso-numero">3</span>
+      <h2 class="text-lg font-semibold">Tu objetivo</h2>
+    </header>
+
+    <div class="grid gap-4 sm:grid-cols-3">
+      <div>
+        <label class="etiqueta" for="tiempo">Tiempo objetivo (horas)</label>
+        <input
+          id="tiempo"
+          class="campo cifra"
+          type="number"
+          step="0.05"
+          min="0.2"
+          max="24"
+          [ngModel]="estado.tiempoObjetivoH()"
+          (ngModelChange)="estado.tiempoObjetivoH.set($event)"
+        />
+        <p class="cifra mt-1 text-sm font-semibold">{{ duracion(estado.tiempoObjetivoH()) }}</p>
+      </div>
+
+      <div>
+        <label class="etiqueta" for="temp">Temperatura (°C)</label>
+        <input
+          id="temp"
+          class="campo cifra"
+          type="number"
+          step="1"
+          min="-30"
+          max="55"
+          [ngModel]="estado.temperaturaC()"
+          (ngModelChange)="estado.temperaturaC.set($event)"
+        />
+        <p class="mt-1 text-xs" style="color: var(--color-tinta-suave)">la del día de la carrera</p>
+      </div>
+
+      <div>
+        <label class="etiqueta" for="objetivo">
+          Cómo quieres correrla
+          <!-- Honestidad sobre qué es el selector: no es salida del modelo. -->
+          <span
+            class="info"
+            tabindex="0"
+            title="Solo propone un tiempo objetivo, que puedes cambiar. La forma de la estrategia la decide el modelo con tu historial."
+            aria-label="Solo propone un tiempo objetivo; la forma de la estrategia la decide el modelo."
+            >i</span
+          >
+        </label>
+        <select
+          id="objetivo"
+          class="campo"
+          [ngModel]="objetivo()"
+          (ngModelChange)="objetivo.set($event)"
+        >
+          @for (opcion of opciones(); track opcion.clave) {
+            <option [value]="opcion.clave">{{ opcion.etiqueta }}</option>
+          }
+        </select>
+        <button
+          class="btn btn-secundario mt-2 w-full"
+          (click)="pedirSugerencia()"
+          [disabled]="!puedeSugerir()"
+          [attr.title]="puedeSugerir() ? null : 'Hace falta tu historial y haber calculado la ruta una vez.'"
+        >
+          Sugerir un tiempo
+        </button>
+      </div>
+    </div>
+
+    @if (sugerencia(); as texto) {
+      <p class="mt-3 text-sm" style="color: var(--color-tinta-media)">{{ texto }}</p>
+    }
+
+    <button
+      class="btn btn-primario mt-4"
+      (click)="calcular()"
+      [disabled]="!estado.puedeCalcular()"
+    >
+      {{ estado.textoCalcular() }}
+    </button>
+
+    @if (!estado.hayHistorial()) {
+      <p class="mt-2 text-xs" style="color: var(--color-tinta-suave)">
+        Falta tu historial (paso 1).
+      </p>
+    }
+  </section>
+
+  <!-- Paso 4 — Resultado -->
+  @if (estado.estrategia(); as estrategia) {
+    <section class="tarjeta mb-4">
+      <header class="mb-3 flex items-center gap-3">
+        <span class="paso-numero paso-numero--hecho">4</span>
+        <h2 class="text-lg font-semibold">Tu estrategia</h2>
+      </header>
+
+      <!-- Lo primero que se lee: cómo salir y dónde está lo duro. -->
+      <app-resumen-carrera [estrategia]="estrategia" />
+
+      <!-- El aviso sale del motivo que devuelve la API, nunca de un umbral
+           escrito aquí. Título, una frase y el medidor. -->
+      @if (estado.disclaimer(); as aviso) {
+        <div [class]="aviso.tono === 'ok' ? 'tarjeta' : 'aviso'" class="mt-5">
+          <p class="font-semibold">{{ aviso.titulo }}</p>
+          <p class="mt-1 text-sm">{{ aviso.cuerpo }}</p>
+          <div class="mt-3">
+            <app-medidor-evidencia [capacidad]="estrategia.capacidad" />
+          </div>
+          <a routerLink="/detalle" class="inline-block text-sm font-semibold underline">
+            Ver por qué esta estrategia →
+          </a>
+        </div>
+      }
+
+      @if (estado.avisoExtrapolacion(); as extra) {
+        <div class="aviso mt-3">{{ extra }}</div>
+      }
+
+      <div class="mt-5">
+        <app-grafica-estrategia
+          [tablaKm]="estrategia.tabla_km"
+          [altimetria]="estrategia.altimetria"
+        />
+        <p class="cifra mt-1 text-xs" style="color: var(--color-tinta-suave)">
+          {{ estrategia.ruta.km_totales.toFixed(1) }} km · +{{
+            estrategia.indicadores.desnivel_positivo_m
+          }}
+          m de desnivel · FC media objetivo {{ estrategia.indicadores.fc_objetivo_media }} bpm
+        </p>
+      </div>
+
+      <details class="mt-4">
+        <summary class="cursor-pointer text-sm font-semibold">Ver la tabla kilómetro a kilómetro</summary>
+        <div class="mt-3 max-h-96 overflow-auto">
+          <table class="w-full text-sm">
+            <thead class="sticky top-0" style="background: var(--color-fondo)">
+              <tr style="color: var(--color-tinta-media)">
+                <th class="p-2 text-left">Km</th>
+                <th class="p-2 text-right">Ritmo</th>
+                <th class="p-2 text-right">FC</th>
+                <th class="p-2 text-right">Pend.</th>
+                <th class="p-2 text-left">Zona</th>
+                <th class="p-2 text-right">Acumulado</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (fila of estrategia.tabla_km; track fila.km) {
+                <tr style="border-top: 1px solid var(--color-borde)">
+                  <td class="cifra p-2 font-semibold">{{ fila.km }}</td>
+                  <td class="cifra p-2 text-right">{{ ritmo(fila.ritmo_objetivo) }}</td>
+                  <td class="cifra p-2 text-right">{{ fila.fc_objetivo.toFixed(0) }}</td>
+                  <td class="cifra p-2 text-right">{{ fila.pendiente.toFixed(1) }}%</td>
+                  <td class="p-2">{{ fila.zona }}</td>
+                  <td class="cifra p-2 text-right">{{ duracion(fila.tiempo_acum_min / 60) }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </details>
+    </section>
+
+    <!-- Paso 5 — Al reloj -->
+    <section class="tarjeta mb-4">
+      <header class="mb-3 flex items-center gap-3">
+        <span class="paso-numero">5</span>
+        <h2 class="text-lg font-semibold">
+          Llevarla al reloj
+          <span
+            class="info"
+            tabindex="0"
+            [attr.title]="estrategia.entrenamiento.aviso"
+            [attr.aria-label]="estrategia.entrenamiento.aviso"
+            >i</span
+          >
+        </h2>
+      </header>
+
+      <p class="mb-3 text-sm" style="color: var(--color-tinta-media)">
+        Esto es lo que marcará tu reloj: {{ estrategia.entrenamiento.pasos.length }} tramos, cada
+        uno con su ritmo.
+      </p>
+      <app-carrera-capitulos [pasos]="estrategia.entrenamiento.pasos" />
+
+      <div class="mt-4 flex flex-wrap gap-2">
+        <button class="btn btn-primario" (click)="descargarFit()">Descargar el .FIT</button>
+
+        @if (estado.garminDisponible()) {
+          @if (estado.garminAutenticada()) {
+            <button class="btn btn-marino" (click)="subirAGarmin()">Subir a mi cuenta de Garmin</button>
+          } @else {
+            <button class="btn btn-secundario" (click)="abrirGarmin()">
+              Conectar Garmin para subirlo
+            </button>
+          }
+        }
+      </div>
+
+      @if (resultadoSubida(); as resultado) {
+        <div class="aviso mt-3">{{ resultado }}</div>
+      }
+
+      <details class="mt-4">
+        <summary class="cursor-pointer text-sm font-semibold">Ver los tramos en detalle</summary>
+        <table class="mt-2 w-full text-sm">
+          <thead>
+            <tr style="color: var(--color-tinta-media)">
+              <th class="p-2 text-left">Tramo</th>
+              <th class="p-2 text-left">Zona</th>
+              <th class="p-2 text-right">Distancia</th>
+              <th class="p-2 text-right">Ritmo</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (paso of estrategia.entrenamiento.pasos; track paso.nombre) {
+              <tr style="border-top: 1px solid var(--color-borde)">
+                <td class="cifra p-2">Km {{ paso.km_inicio }}–{{ paso.km_fin }}</td>
+                <td class="p-2">{{ paso.zona }}</td>
+                <td class="cifra p-2 text-right">{{ paso.km.toFixed(0) }} km</td>
+                <td class="cifra p-2 text-right">{{ rangoRitmo(paso.ritmo_min, paso.ritmo_max) }} /km</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </details>
+    </section>
+  }
+</div>

@@ -1,0 +1,458 @@
+@import 'tailwindcss';
+
+/* ---------------------------------------------------------------------------
+   Sistema de diseño — Stamina.AI
+
+   Los colores salen de frontend/marca/paleta.txt, que el autor definió antes de
+   esta fase. El archivo original es un bloque [theme] de Streamlit; se reusan
+   los valores, no el formato.
+
+   Los tokens se llaman --color-* y --shadow-* a propósito: Tailwind v4 genera
+   utilidades automáticamente a partir de ellos (bg-marca, shadow-tarjeta).
+   --------------------------------------------------------------------------- */
+
+@theme {
+  /* Marca */
+  --color-marca: #f36621; /* naranja primario */
+  --color-marca-oscuro: #d2500f;
+  --color-marca-suave: #fdeee6;
+
+  /* Fondos y texto */
+  --color-fondo: #f8f9fa;
+  --color-superficie: #ffffff;
+  --color-tinta: #11223d; /* azul marino: el color del texto */
+
+  /* El mismo marino, pero como superficie. Van separados porque en modo
+     oscuro la tinta se aclara para poder leerla y el marino no: si fueran
+     el mismo token, la cabecera se volveria blanca. */
+  --color-marino: #11223d;
+  --color-paso: #11223d; /* el circulito del numero de paso */
+  --color-tinta-media: #4a5a75;
+  --color-tinta-suave: #8b97a8;
+  --color-borde: #e2e6ec;
+
+  /* Semánticos */
+  --color-aviso: #b7791f;
+  --color-aviso-fondo: #fffbeb;
+  --color-aviso-texto: #78350f;
+  --color-error: #c53030;
+  --color-error-fondo: #fff5f5;
+  --color-error-texto: #742a2a;
+  --color-ok: #2f855a;
+
+  --shadow-tarjeta: 0 1px 3px rgb(17 34 61 / 0.08), 0 1px 2px rgb(17 34 61 / 0.04);
+  --shadow-elevada: 0 8px 24px rgb(17 34 61 / 0.12);
+
+  --radius-tarjeta: 0.75rem;
+
+  --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+}
+
+/* --- Modo oscuro ----------------------------------------------------------
+   Solo se redefinen los tokens: ningun componente sabe en que tema esta. El
+   atributo lo pone `TemaService`, y un script en index.html lo adelanta para
+   que recargar en oscuro no parpadee en blanco.
+
+   El marino de marca no se toca: la cabecera y la portada siguen siendo
+   marino en los dos modos, que es lo que las identifica. Lo que si cambia es
+   el circulito del paso, que sobre una tarjeta oscura desaparecia. */
+[data-tema='oscuro'] {
+  --color-fondo: #0d1626;
+  --color-superficie: #152238;
+  --color-tinta: #e7edf6;
+  --color-tinta-media: #aab8ce;
+  --color-tinta-suave: #7d8ca6;
+  --color-borde: #26344e;
+  --color-paso: #33507f;
+
+  --color-marca-suave: #2e1d12;
+  --color-aviso-fondo: #2b2413;
+  --color-aviso-texto: #f0d79a;
+  --color-error-fondo: #2c1818;
+  --color-error-texto: #f5b8b8;
+  --color-ok: #48bb78;
+}
+
+html,
+body {
+  background: var(--color-fondo);
+  color: var(--color-tinta);
+  font-family: var(--font-sans);
+  margin: 0;
+  min-height: 100%;
+}
+
+/* --- Componentes ---------------------------------------------------------- */
+
+.tarjeta {
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radius-tarjeta);
+  box-shadow: var(--shadow-tarjeta);
+  padding: 1.25rem 1.5rem;
+}
+
+.tarjeta--inactiva {
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.btn {
+  border: 1px solid transparent;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  padding: 0.625rem 1.125rem;
+  transition:
+    background-color 0.15s,
+    border-color 0.15s,
+    opacity 0.15s;
+}
+
+.btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.btn-primario {
+  background: var(--color-marca);
+  color: #fff;
+}
+.btn-primario:hover:not(:disabled) {
+  background: var(--color-marca-oscuro);
+}
+
+.btn-secundario {
+  background: var(--color-superficie);
+  border-color: var(--color-borde);
+  color: var(--color-tinta);
+}
+.btn-secundario:hover:not(:disabled) {
+  border-color: var(--color-tinta-suave);
+}
+
+.btn-marino {
+  background: var(--color-marino);
+  color: #fff;
+}
+.btn-marino:hover:not(:disabled) {
+  background: #1b3357;
+}
+
+.campo {
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: 0.5rem;
+  color: var(--color-tinta);
+  font-size: 0.9375rem;
+  padding: 0.5rem 0.75rem;
+  width: 100%;
+}
+.campo:focus {
+  border-color: var(--color-marca);
+  outline: 2px solid var(--color-marca-suave);
+}
+
+.etiqueta {
+  color: var(--color-tinta-media);
+  display: block;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  margin-bottom: 0.375rem;
+}
+
+.zona-punto {
+  border-radius: 999px;
+  display: inline-block;
+  height: 0.625rem;
+  margin-right: 0.375rem;
+  width: 0.625rem;
+}
+
+/* Cifras en tablas: tabulares para que las columnas cuadren. */
+.cifra {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Avisos. El de "sin evidencia" no es decorativo: es parte del producto. */
+.aviso {
+  background: var(--color-aviso-fondo);
+  border-left: 3px solid var(--color-aviso);
+  border-radius: 0.375rem;
+  color: var(--color-aviso-texto);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  padding: 0.75rem 1rem;
+}
+
+.aviso-error {
+  background: var(--color-error-fondo);
+  border-left: 3px solid var(--color-error);
+  border-radius: 0.375rem;
+  color: var(--color-error-texto);
+  font-size: 0.875rem;
+  padding: 0.75rem 1rem;
+}
+
+.soltar {
+  border: 2px dashed var(--color-borde);
+  border-radius: var(--radius-tarjeta);
+  cursor: pointer;
+  padding: 1.75rem 1rem;
+  text-align: center;
+  transition:
+    border-color 0.15s,
+    background-color 0.15s;
+}
+.soltar:hover,
+.soltar--activo {
+  background: var(--color-marca-suave);
+  border-color: var(--color-marca);
+}
+
+.paso-numero {
+  align-items: center;
+  background: var(--color-paso);
+  border-radius: 999px;
+  color: #fff;
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  height: 1.75rem;
+  justify-content: center;
+  width: 1.75rem;
+}
+
+.paso-numero--hecho {
+  background: var(--color-ok);
+}
+
+/* Dialogo de confirmacion -------------------------------------------------- */
+/* Sustituye a `confirm()`, que el navegador rotula con el origen de la pagina
+   («localhost:4200 dice…») sin dejar cambiarlo. Con `<dialog>` + showModal() el
+   foco, Escape y el apilado salen gratis; aqui solo va el aspecto. */
+.modal {
+  /* El `margin: auto` que centra un <dialog> modal lo pone el navegador, y el
+     preflight de Tailwind lo borra junto con el resto de margenes. Sin esto el
+     dialogo aparece pegado a la esquina superior izquierda. */
+  margin: auto;
+  max-width: min(30rem, calc(100vw - 2rem));
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+}
+
+.modal::backdrop {
+  background: rgb(17 34 61 / 0.55);
+}
+
+.modal-caja {
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radius-tarjeta);
+  box-shadow: var(--shadow-elevada);
+  padding: 1.25rem 1.5rem;
+}
+
+.modal-marca {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--color-borde);
+}
+
+/* Barra de progreso de la descarga de Garmin. El porcentaje es real: se calcula
+   sobre las horas pedidas, que se conocen antes de empezar. */
+.progreso {
+  height: 0.5rem;
+  border-radius: 999px;
+  background: var(--color-borde);
+  overflow: hidden;
+}
+
+.progreso-relleno {
+  height: 100%;
+  background: var(--color-marca);
+  transition: width 0.3s ease;
+}
+
+/* Portada ------------------------------------------------------------------ */
+/* El primer pantallazo. Ocupa la ventana entera con el azul marino de la
+   paleta, asi que la cabecera y el pie de la aplicacion no se pintan encima
+   (ver `App.conArmazon`). El resplandor naranja es el color de marca al 18 %:
+   suficiente para que el marino no quede plano, sin robarle contraste al texto. */
+.portada {
+  background:
+    radial-gradient(60rem 30rem at 50% -15%, rgb(243 102 33 / 0.18), transparent 70%),
+    var(--color-marino);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+  /* `100dvh` y no `100vh`: en movil la barra del navegador se cuenta dentro de
+     `vh`, y el boton de entrar acaba fuera de la pantalla. */
+  min-height: 100dvh;
+}
+
+.portada-caja {
+  max-width: 26rem;
+  text-align: center;
+  width: 100%;
+}
+
+/* Sobre el marino, los grises de la paleta (pensados para fondo claro) no se
+   leen. Se aclaran solo aqui, sin tocar el token. */
+.portada .etiqueta {
+  color: #b8c4d6;
+}
+
+/* Zona de soltar apagada: mientras el historial esta llegando (subiendose o
+   bajando de Garmin) no se aceptan mas archivos, y la zona dice por que. */
+.soltar--apagada {
+  cursor: not-allowed;
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+/* Los botones de la cabecera: salir y cambiar de tema. Discretos sobre el
+   marino pero alcanzables; no compiten con la marca ni con el naranja, que
+   esta reservado a la accion principal de cada paso. */
+.btn-cabecera {
+  background: transparent;
+  border: 1px solid rgb(255 255 255 / 0.35);
+  border-radius: 0.5rem;
+  color: #fff;
+  cursor: pointer;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  padding: 0.3125rem 0.75rem;
+  transition:
+    background-color 0.15s,
+    border-color 0.15s;
+  white-space: nowrap;
+}
+
+.btn-cabecera:hover {
+  background: rgb(255 255 255 / 0.12);
+  border-color: rgb(255 255 255 / 0.6);
+}
+
+/* El relato de la estrategia ----------------------------------------------- */
+/* Lo visual antes que el texto (sugerencia del profesor): una frase, tres
+   cifras grandes, la carrera en capítulos y un medidor en vez de párrafos. */
+
+.titular {
+  font-size: 1.125rem;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.cifra-grande p:first-child {
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.cifra-grande .unidad {
+  color: var(--color-tinta-suave);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.cifra-grande-etiqueta {
+  color: var(--color-tinta-suave);
+  font-size: 0.75rem;
+  margin-top: 0.125rem;
+}
+
+/* La carrera por capítulos: una barra partida en los tramos del reloj. */
+.capitulos {
+  border-radius: 0.5rem;
+  display: flex;
+  gap: 2px;
+  height: 3.25rem;
+  overflow: hidden;
+}
+
+.capitulo {
+  color: #fff;
+  display: flex;
+  flex-basis: 0;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0.375rem;
+  overflow: hidden;
+  padding: 0 0.5rem;
+  white-space: nowrap;
+}
+
+.capitulo-km {
+  font-size: 0.6875rem;
+  opacity: 0.9;
+}
+
+.capitulo-ritmo {
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+/* El medidor de evidencia: horas frente al siguiente escalón medido. */
+.medidor-pista {
+  background: var(--color-borde);
+  border-radius: 999px;
+  height: 0.625rem;
+  margin: 0.5rem 0 1.25rem;
+  position: relative;
+}
+
+.medidor-relleno {
+  background: var(--color-aviso);
+  border-radius: 999px;
+  height: 100%;
+  max-width: 100%;
+  transition: width 0.4s ease;
+}
+
+.medidor-relleno--ok {
+  background: var(--color-ok);
+}
+
+.medidor-marca {
+  background: var(--color-tinta);
+  border-radius: 1px;
+  height: 1rem;
+  position: absolute;
+  top: -0.1875rem;
+  transform: translateX(-50%);
+  width: 2px;
+}
+
+.medidor-etiqueta {
+  color: var(--color-tinta-media);
+  font-size: 0.6875rem;
+  position: absolute;
+  top: 0.9375rem;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+/* ⓘ: el detalle que antes era un párrafo, a un paso del cursor. */
+.info {
+  border: 1px solid var(--color-tinta-suave);
+  border-radius: 999px;
+  color: var(--color-tinta-suave);
+  cursor: help;
+  display: inline-flex;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  height: 1rem;
+  justify-content: center;
+  line-height: 0.875rem;
+  margin-left: 0.25rem;
+  vertical-align: middle;
+  width: 1rem;
+}
