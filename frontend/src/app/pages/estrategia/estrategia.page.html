@@ -1,4 +1,10 @@
 <div class="mx-auto max-w-5xl px-4 py-6">
+  @if (despertando()) {
+    <div class="aviso mb-4" role="status">
+      Despertando el servidor: la primera visita tras un rato sin uso tarda hasta un minuto.
+    </div>
+  }
+
   @if (estado.error(); as mensaje) {
     <div class="aviso-error mb-4 flex items-start justify-between gap-3">
       <span>{{ mensaje }}</span>

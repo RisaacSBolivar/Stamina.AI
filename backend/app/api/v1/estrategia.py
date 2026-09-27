@@ -10,6 +10,7 @@ capacidad, los pasos para el reloj y el `.FIT` ya generado.
 from __future__ import annotations
 
 from fastapi import APIRouter, File, Form, UploadFile
+from fastapi.concurrency import run_in_threadpool
 
 from app.api.deps import Config, ServicioPipeline
 from app.core.errors import ArchivoInvalido
@@ -66,17 +67,24 @@ async def calcular_estrategia(
             details={"motivo": str(error)[:300]},
         ) from error
 
-    perfil = estrategia_service.perfil_de_gpx(contenido, nombre)
-    km_ruta = float((perfil["split"].max() + 1) * 100 / 1000)
+    def calcular() -> dict:
+        perfil = estrategia_service.perfil_de_gpx(contenido, nombre)
+        km_ruta = float((perfil["split"].max() + 1) * 100 / 1000)
 
-    datos = historial_service.desde_tramos(tramos.model_dump(), limite=config.max_tramos_historial)
-    pipeline = servicio.entrenar(datos, km_ruta)
+        datos = historial_service.desde_tramos(
+            tramos.model_dump(), limite=config.max_tramos_historial
+        )
+        pipeline = servicio.entrenar(datos, km_ruta)
 
-    estrategia = estrategia_service.calcular(
-        pipeline,
-        perfil,
-        tiempo_objetivo_h,
-        temperatura_c,
-        nombre_ruta=nombre.rsplit(".", 1)[0],
-    )
-    return Estrategia(**estrategia_service.a_respuesta(estrategia))
+        estrategia = estrategia_service.calcular(
+            pipeline,
+            perfil,
+            tiempo_objetivo_h,
+            temperatura_c,
+            nombre_ruta=nombre.rsplit(".", 1)[0],
+        )
+        return estrategia_service.a_respuesta(estrategia)
+
+    # Entrenar es CPU pura: fuera del bucle de eventos, por lo mismo que la subida
+    # de `.FIT` (ver `historial.subir_archivos`).
+    return Estrategia(**await run_in_threadpool(calcular))

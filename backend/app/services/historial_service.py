@@ -9,8 +9,8 @@ a saber por qué antes de leer un disclaimer sobre su historial.
 **El servidor no guarda el historial.** Los `.FIT` se parsean a tramos de 100 m
 (`a_tramos`) y esos tramos vuelven al navegador, que los manda de nuevo en cada
 cálculo (`desde_tramos`). Así la API no tiene estado, los `.FIT` se pueden subir
-por tandas —cada petición de Vercel admite 4.5 MB— y el historial no se queda en
-ningún servidor. Los tramos no llevan coordenadas: velocidad, pulso, cadencia,
+por tandas —con progreso y sin ninguna petición enorme— y el historial no se
+queda en ningún servidor. Los tramos no llevan coordenadas: velocidad, pulso, cadencia,
 altitud, temperatura, tiempo y fecha por cada 100 m.
 """
 

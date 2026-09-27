@@ -1,0 +1,24 @@
+# Dependencias de EJECUCIÓN de la API, para el despliegue en Render.
+#
+# No es el entorno de desarrollo: ese lo instala `make setup` desde
+# pyproject.toml (con pytest, ruff…). Aquí va solo lo que el servicio necesita
+# para atender peticiones, porque la instancia gratuita de Render tiene 512 MB.
+#
+# - Sin pyarrow: la API no carga metadata.joblib (lo único que lo exigía) sino
+#   modelo/reglas.json, y no lee ni escribe parquet.
+# - Sin TensorFlow: la regla no asigna la red a nadie con el historial medido.
+#
+# Los pisos son los de pyproject.toml.
+fastapi>=0.115
+uvicorn[standard]>=0.32
+pydantic>=2.9
+pydantic-settings>=2.6
+python-multipart>=0.0.12
+pandas>=3.0
+numpy>=2.0
+scikit-learn>=1.9
+joblib>=1.4
+gpxpy>=1.6
+fitparse>=1.2
+haversine>=2.8
+garminconnect>=0.2.25

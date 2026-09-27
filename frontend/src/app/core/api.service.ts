@@ -5,14 +5,15 @@
  * `make contracts` desde el OpenAPI del backend. Si el backend cambia un campo
  * y aquí no se ajusta, `npx tsc --noEmit` lo caza antes de llegar al navegador.
  *
- * La API no guarda nada de nadie entre peticiones (salvo lo de Garmin, en
- * local): el historial procesado vive aquí, en el navegador, y viaja entero en
- * cada petición que lo necesita.
+ * La API no guarda nada de nadie entre peticiones (salvo la sesión y la
+ * descarga de Garmin): el historial procesado vive aquí, en el navegador, y
+ * viaja entero en cada petición que lo necesita.
  */
 import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { lastValueFrom } from 'rxjs';
 
+import { environment } from '../../environments/environment';
 import type { components } from './api/schema';
 
 type Esquemas = components['schemas'];
@@ -41,9 +42,10 @@ const MS_ENTRE_CONSULTAS = 2000;
 /**
  * Cuántos bytes de `.FIT` van en cada petición.
  *
- * Vercel corta el cuerpo a 4.5 MB. Se deja margen para lo que añade el
- * multipart: 3.5 MB de archivos son unas 13 h de historial por tanda. Un
- * historial más largo se sube en varias y aquí se juntan los tramos.
+ * Unas 13 h de historial por tanda. Partir la subida da progreso («2 de 5») y
+ * evita una sola petición de minutos; además cabe en el tope de 4.5 MB que
+ * tienen algunas plataformas, como las funciones de Vercel. Aquí se juntan los
+ * tramos de todas las tandas.
  */
 const BYTES_POR_TANDA = 3.5 * 1024 * 1024;
 
@@ -98,8 +100,8 @@ export function juntarProcesados(partes: HistorialProcesado[]): HistorialProcesa
 export class ApiService {
   private http = inject(HttpClient);
 
-  /** Relativa a propósito: el mismo build sirve tras el proxy de dev y en el despliegue. */
-  readonly base = '/api/v1';
+  /** Relativa en desarrollo (proxy) y absoluta en producción (Render): ver `environments/`. */
+  readonly base = environment.apiUrl;
 
   // --- Salud ---------------------------------------------------------------
 

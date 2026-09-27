@@ -4,13 +4,14 @@ Carga del historial: archivos subidos o descarga desde Garmin Connect.
 El servidor **no se queda con el historial**. Los `.FIT` se procesan a tramos de
 100 m y los tramos vuelven al navegador, que los manda de nuevo cuando los
 necesita (resumen, sugerencia, estrategia). Por eso la subida se puede partir en
-tandas —cada petición admite unos 4.5 MB en el despliegue— y ninguna petición
-depende de que otra haya caído en el mismo proceso.
+tandas —así hay progreso y ninguna petición es enorme— y ninguna petición depende
+de que otra haya caído en el mismo proceso.
 """
 
 from __future__ import annotations
 
 from fastapi import APIRouter, File, UploadFile, status
+from fastapi.concurrency import run_in_threadpool
 
 from app.api.deps import Config, ConGarmin, ServicioPipeline, SesionesGarmin, Tareas
 from app.core.errors import ArchivoInvalido, ConfirmacionRequerida
@@ -68,7 +69,14 @@ async def subir_archivos(
             )
         contenidos.append((archivo.filename or "sin_nombre.fit", datos))
 
-    return _procesado(historial_service.procesar_subida(contenidos, n_jobs=config.procesos_parseo))
+    # Parsear es CPU pura y puede tardar minutos en una máquina pequeña. En el
+    # bucle de eventos dejaría al servidor entero sin responder mientras tanto
+    # (salud, progreso de Garmin, otras personas): con un solo proceso, como en
+    # Render, eso es todo el servicio.
+    procesado = await run_in_threadpool(
+        historial_service.procesar_subida, contenidos, n_jobs=config.procesos_parseo
+    )
+    return _procesado(procesado)
 
 
 @router.post(

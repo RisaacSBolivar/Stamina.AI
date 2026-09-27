@@ -39,6 +39,9 @@ import { ConfirmacionService } from '../../core/confirmacion.service';
 import { EstadoService, KM_MARATON } from '../../core/estado.service';
 import { duracion, motivo, periodo, rangoRitmo, ritmo, semanas } from '../../core/formato';
 
+/** Lo que tarda en contestar un servidor despierto, con holgura. */
+const MS_ANTES_DE_AVISAR_ARRANQUE = 3000;
+
 @Component({
   selector: 'app-estrategia-page',
   imports: [
@@ -65,6 +68,8 @@ export class EstrategiaPage implements OnInit {
   protected readonly sugerencia = signal<string | null>(null);
   protected readonly mostrarGarmin = signal(false);
   protected readonly resultadoSubida = signal<string | null>(null);
+  /** El servidor tarda en contestar la primera vez: probablemente está arrancando. */
+  protected readonly despertando = signal(false);
 
   // Los formateadores, a mano de la plantilla.
   protected readonly ritmo = ritmo;
@@ -98,6 +103,10 @@ export class EstrategiaPage implements OnInit {
   });
 
   async ngOnInit(): Promise<void> {
+    // El servidor gratuito se duerme tras un rato sin uso y tarda cerca de un
+    // minuto en despertar. Si la primera respuesta no llega enseguida, se dice
+    // por qué, en vez de dejar la página callada.
+    const aviso = setTimeout(() => this.despertando.set(true), MS_ANTES_DE_AVISAR_ARRANQUE);
     try {
       const [salud, opciones] = await Promise.all([
         this.api.salud(),
@@ -116,6 +125,9 @@ export class EstrategiaPage implements OnInit {
       this.estado.error.set(
         error instanceof ErrorApi ? error.message : 'No se pudo contactar con el servidor.',
       );
+    } finally {
+      clearTimeout(aviso);
+      this.despertando.set(false);
     }
   }
 

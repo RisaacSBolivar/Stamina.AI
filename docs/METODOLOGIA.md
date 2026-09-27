@@ -109,10 +109,11 @@ Prefijo `/api/v1`. Documentación interactiva en `/docs`.
 **La API no tiene estado.** Ninguna respuesta lleva un identificador que haya
 que devolver después, salvo las de Garmin: el historial procesado vuelve al
 navegador y viaja en cada petición, y la estrategia trae consigo sus pasos y su
-`.FIT`. Así puede desplegarse en funciones sin servidor (Vercel), donde dos
-peticiones no tienen por qué caer en el mismo proceso. Garmin es la excepción:
-necesita una sesión viva entre peticiones. Está encendido también en el
-despliegue, y `STAMINA_GARMIN_HABILITADO=False` lo apaga.
+`.FIT`. Así da igual en qué proceso caiga cada petición. Garmin es la
+excepción: la sesión y la descarga tienen que seguir vivas entre peticiones, y
+por eso la API se despliega como un servicio con un solo proceso (Render) y no
+como funciones sin servidor, donde se probó y la descarga no llegaba a su fin.
+`STAMINA_GARMIN_HABILITADO=False` apaga Garmin.
 
 Ejemplo — la consulta que produce el disclaimer:
 

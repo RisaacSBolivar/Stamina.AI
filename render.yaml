@@ -1,0 +1,34 @@
+# Blueprint de Render: la API de Stamina.AI (backend/) como servicio web.
+#
+# La interfaz se despliega aparte en Vercel (vercel.json) y llama a esta API
+# directamente, con CORS. Aquí vive un solo proceso con memoria propia, que es
+# lo que necesita Garmin: la sesión (login y código) y la descarga se quedan
+# en él entre petición y petición.
+services:
+  - type: web
+    name: stamina-ai-api
+    runtime: python
+    plan: free
+    region: virginia
+    # Con rootDir, Render solo vuelve a desplegar cuando cambia algo de backend/.
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    # Un solo proceso a propósito: la sesión de Garmin y la descarga viven en su
+    # memoria. Sin healthCheckPath: con 0.1 CPU, una subida larga puede retrasar
+    # la respuesta de la salud, y Render reiniciaría el servicio a medio trabajo.
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    autoDeployTrigger: commit
+    envVars:
+      # Render usa 3.14 por defecto; todo está probado con 3.12.
+      - key: PYTHON_VERSION
+        value: 3.12.14
+      - key: STAMINA_ENVIRONMENT
+        value: prod
+      - key: STAMINA_DEBUG
+        value: "False"
+      # Una sola CPU (y fraccionaria): parsear en paralelo ahí es más lento.
+      - key: STAMINA_PROCESOS_PARSEO
+        value: "1"
+      # La interfaz publicada en Vercel.
+      - key: STAMINA_CORS_ORIGINS
+        value: https://stamina-ai.vercel.app

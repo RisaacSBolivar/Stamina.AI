@@ -13,16 +13,15 @@ cede en las cuestas y cómo se fatiga, lo cruza con la altimetría de la ruta
 > explica el motivo real.** No es consejo médico ni sustituye a un entrenador.
 
 El repositorio está dividido en dos carpetas principales, más lo necesario para
-desplegarlas juntas:
+desplegarlas:
 
 ```
-backend/           # API en FastAPI (Python) y el pipeline del modelo (stamina_core)
-frontend/          # Aplicación en Angular (TypeScript) — interfaz de usuario
-api/index.py       # Punto de entrada de la API en Vercel
-vercel.json        # Config de despliegue (ver "Despliegue en Vercel")
-requirements.txt   # Dependencias de la API en producción
-docs/              # Metodología: la regla de capacidad y los límites del modelo
-Makefile           # Atajos para instalar, levantar y probar todo
+backend/       # API en FastAPI (Python) y el pipeline del modelo (stamina_core)
+frontend/      # Aplicación en Angular (TypeScript) — interfaz de usuario
+render.yaml    # Despliegue de la API en Render (ver "Despliegue")
+vercel.json    # Despliegue de la interfaz en Vercel (ver "Despliegue")
+docs/          # Metodología: la regla de capacidad y los límites del modelo
+Makefile       # Atajos para instalar, levantar y probar todo
 ```
 
 ## Arquitectura
@@ -59,8 +58,8 @@ graph TD
     Garmin -.->|"sincroniza el entrenamiento"| Reloj
 ```
 
-En producción (Vercel) la interfaz y la API quedan bajo el mismo dominio: ver
-[«Despliegue en Vercel»](#despliegue-en-vercel).
+En producción la interfaz vive en Vercel y la API en Render: ver
+[«Despliegue»](#despliegue).
 
 ## Cómo funciona
 
@@ -89,7 +88,7 @@ sequenceDiagram
     participant G as Garmin Connect
 
     C->>F: Sube sus .FIT
-    loop Por tandas (cada petición admite 4.5 MB en Vercel)
+    loop Por tandas de unos 3.5 MB, con progreso
         F->>B: POST /api/v1/historial/archivos
         B->>S: Parsea y reduce a tramos de 100 m, sin coordenadas
         B-->>F: tramos
@@ -191,9 +190,9 @@ npm start     # ng serve
 ```
 
 - Aplicación: http://localhost:4200
-- La interfaz llama a la API con la ruta relativa `/api/v1`. En desarrollo,
-  `proxy.conf.json` la manda a `http://localhost:8000`; en producción la
-  resuelven las rewrites de Vercel, bajo el mismo dominio.
+- La URL de la API sale de `src/environments/`. En desarrollo es la ruta
+  relativa `/api/v1`, que `proxy.conf.json` manda a `http://localhost:8000`; en
+  producción, la del servicio de Render.
 - Tests: `npm test` (Vitest).
 - Los tipos de la API (`src/app/core/api/schema.d.ts`) no se escriben a mano:
   salen del OpenAPI del backend con `make contracts`.
@@ -225,11 +224,42 @@ make help    # todos los comandos
 Con ambos corriendo, abre http://localhost:4200, entra, sube los `.FIT` y el
 `.GPX` y pulsa «Calcular mi estrategia».
 
-## Despliegue en Vercel
+## Despliegue
 
-`vercel.json` (raíz del repo) despliega la interfaz y la API como un solo
-proyecto, en un solo dominio: el frontend como sitio estático y la API como una
-función Python.
+En producción son dos servicios: la interfaz en **Vercel** y la API en
+**Render**. El navegador descarga la interfaz de Vercel y habla directamente con
+la API en Render.
+
+```mermaid
+graph LR
+    Nav(["🌐 Navegador"])
+
+    subgraph Vercel["Vercel · stamina-ai.vercel.app"]
+        Web["frontend/dist/frontend/browser<br/>(Angular, sitio estático)"]
+    end
+
+    subgraph Render["Render · stamina-ai-api.onrender.com"]
+        API["uvicorn app.main:app<br/>(FastAPI, un solo proceso)"]
+    end
+
+    Garmin[("Garmin Connect")]
+
+    Nav -->|"páginas y recursos"| Web
+    Nav -->|"/api/v1/* (CORS)"| API
+    API -->|"login, descarga y subida"| Garmin
+```
+
+**Por qué dos servicios.** La API se probó primero entera en Vercel, como
+función. Subir `.FIT`, calcular y subir el entrenamiento a Garmin funcionaban;
+la descarga desde Garmin, no. Vercel reparte las peticiones entre varias
+instancias y congela cada una entre petición y petición, así que la consulta del
+progreso caía en una instancia que no conocía la descarga. Garmin necesita un
+proceso que siga vivo, y eso es un servicio web en Render.
+
+### Interfaz en Vercel
+
+`vercel.json` (raíz del repo) construye el frontend y lo publica como sitio
+estático:
 
 ```json
 {
@@ -237,68 +267,72 @@ función Python.
   "installCommand": "cd frontend && npm ci",
   "buildCommand": "cd frontend && npm run build",
   "outputDirectory": "frontend/dist/frontend/browser",
-  "functions": {
-    "api/index.py": {
-      "maxDuration": 300,
-      "excludeFiles": "{frontend/**,docs/**,backend/tests/**,backend/scripts/**,backend/modelo/metadata.joblib,**/__pycache__/**,**/*.md}"
-    }
-  },
-  "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api/index" },
-    { "source": "/(.*)", "destination": "/index.html" }
-  ]
+  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
 }
 ```
 
-Vercel sirve primero los archivos del build; las `rewrites` solo se aplican a lo
-que no es un archivo, y en orden:
+- Vercel sirve primero los archivos del build; cualquier otra ruta va a
+  `index.html`, donde la resuelve el router de Angular.
+- `framework: null` evita que Vercel detecte el backend de Python y se salte el
+  build del frontend.
+- La URL de la API en producción está en
+  `frontend/src/environments/environment.ts`.
 
-```mermaid
-graph TD
-    P(["Petición entrante<br/>al dominio de Vercel"]) --> Q0{"¿es un archivo<br/>del build?"}
-    Q0 -->|sí| Static["frontend/dist/frontend/browser<br/>(Angular)"]
-    Q0 -->|no| Q1{"¿coincide con<br/>/api/(.*)?"}
-    Q1 -->|sí| Back["función api/index.py<br/>(FastAPI)"]
-    Q1 -->|no| SPA["/index.html<br/>(las rutas de Angular)"]
+**En el dashboard de Vercel**: **Root Directory** en `./` y **Framework Preset**
+en Other; la instalación, el build y la salida ya los fija `vercel.json`. No
+necesita variables de entorno.
+
+### API en Render
+
+`render.yaml` (raíz del repo) es un *Blueprint*: describe el servicio web de la
+API y Render lo crea tal cual. Sin sus comentarios:
+
+```yaml
+services:
+  - type: web
+    name: stamina-ai-api
+    runtime: python
+    plan: free
+    region: virginia
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    autoDeployTrigger: commit
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.14
+      - key: STAMINA_ENVIRONMENT
+        value: prod
+      - key: STAMINA_DEBUG
+        value: "False"
+      - key: STAMINA_PROCESOS_PARSEO
+        value: "1"
+      - key: STAMINA_CORS_ORIGINS
+        value: https://stamina-ai.vercel.app
 ```
 
-- `api/index.py` añade `backend/` al path e importa `app.main:app`, la misma
-  aplicación que levanta `uvicorn` en local. FastAPI recibe la ruta original
-  (`/api/v1/...`).
-- `requirements.txt` (raíz) lleva solo lo que la API necesita para atender
-  peticiones, sin las herramientas de desarrollo, porque Vercel limita cada
-  función Python a 500 MB. `excludeFiles` deja fuera de la función todo lo que
-  no usa.
-- La API no guarda nada entre peticiones, porque Vercel no garantiza que dos
-  caigan en el mismo proceso: el historial vuelve al navegador y la estrategia
-  trae consigo sus pasos y su `.FIT`. Como cada petición admite 4.5 MB, el
-  navegador sube los `.FIT` por tandas.
-- `framework: null` evita que Vercel detecte FastAPI y se salte el build del
-  frontend.
+- `rootDir: backend`: se instala `backend/requirements.txt`, que lleva solo lo
+  que la API necesita para atender peticiones, y Render solo vuelve a desplegar
+  cuando cambia algo de `backend/`.
+- **Un solo proceso** de `uvicorn`: la sesión de Garmin y la descarga viven en
+  su memoria entre petición y petición. Lo pesado (leer los `.FIT`, entrenar el
+  modelo) corre en un hilo aparte, para que el servidor siga contestando
+  mientras tanto.
+- `STAMINA_CORS_ORIGINS` autoriza a la interfaz publicada a llamar a la API
+  desde su dominio.
+- `PYTHON_VERSION` fija Python 3.12, con el que está probado todo.
+- La instancia gratuita **se duerme** tras un rato sin tráfico y la primera
+  petición la despierta. Mientras tanto, la interfaz avisa: «Despertando el
+  servidor». Antes de una demo conviene abrir la página unos minutos antes.
 
-**En el dashboard de Vercel** (pantalla de importación del proyecto):
+**Pasos:**
 
-- **Root Directory** en `./`, donde está `vercel.json`.
-- **Framework Preset**: Other. La instalación, el build y la salida ya los fija
-  `vercel.json`.
-- **Environment Variables** (Production):
-
-  | Variable | Valor |
-  |---|---|
-  | `STAMINA_ENVIRONMENT` | `prod` |
-  | `STAMINA_DEBUG` | `False` |
-  | `STAMINA_PROCESOS_PARSEO` | `1` |
-
-Después de desplegar, `https://<tu-proyecto>.vercel.app/api/v1/health` tiene que
-decir `"cargadas": true` en `reglas`.
-
-**Por comprobar en producción: Garmin.** Es la única parte con estado: la sesión
-(login y código de verificación) y la descarga viven en la memoria de un
-proceso. En Vercel puede fallar si el login y el código caen en instancias
-distintas, o si la instancia se congela a mitad de la descarga. En ese caso la
-interfaz se queda en Vercel y la API pasa a un servidor con un proceso
-persistente (tentativamente, Render). Garmin además limita los accesos desde IP
-de centros de datos; eso pasaría en cualquier servidor en la nube.
+1. En Render: **New → Blueprint**, conecta el repositorio de GitHub y aplica.
+2. Comprueba `https://stamina-ai-api.onrender.com/api/v1/health`: tiene que
+   decir `"entorno": "prod"` y `"cargadas": true` en `reglas`.
+3. Si Render le da otra URL al servicio, cámbiala en
+   `frontend/src/environments/environment.ts`. Si la interfaz cambia de
+   dominio, cámbialo en `STAMINA_CORS_ORIGINS`.
 
 ## Estructura del repositorio
 

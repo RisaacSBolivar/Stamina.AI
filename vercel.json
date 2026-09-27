@@ -4,14 +4,5 @@
   "installCommand": "cd frontend && npm ci",
   "buildCommand": "cd frontend && npm run build",
   "outputDirectory": "frontend/dist/frontend/browser",
-  "functions": {
-    "api/index.py": {
-      "maxDuration": 300,
-      "excludeFiles": "{frontend/**,docs/**,backend/tests/**,backend/scripts/**,backend/modelo/metadata.joblib,**/__pycache__/**,**/*.md}"
-    }
-  },
-  "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api/index" },
-    { "source": "/(.*)", "destination": "/index.html" }
-  ]
+  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
 }
