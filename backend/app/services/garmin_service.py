@@ -211,9 +211,9 @@ def descargar_historial(
     otra persona, y el servidor no tiene por qué conservarlos.
 
     `progreso` se llama tras cada actividad con `(descargadas, horas)`. Esto
-    tarda entre diez y veinte minutos —0.6 s de pausa obligatoria por actividad
-    contra el límite de peticiones de Garmin, más la descarga—, así que quien
-    llama necesita poder contarlo. Es opcional: sin él, todo sigue igual.
+    tarda minutos —una descarga y 0.6 s de pausa obligatoria por actividad
+    contra el límite de peticiones de Garmin—, así que quien llama necesita
+    poder contarlo. Es opcional: sin él, todo sigue igual.
 
     `cancelado` se consulta antes de cada actividad y corta con
     `DescargaCancelada`. Es cooperativo porque no hay otra forma: a un hilo de

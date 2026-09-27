@@ -1,11 +1,11 @@
 """
 La descarga de Garmin como tarea con progreso.
 
-Bajar el historial tarda entre diez y veinte minutos: hay 0.6 s de pausa
-obligatoria por actividad contra el límite de peticiones de Garmin, más lo que
-tarde cada archivo. Resolverlo en una sola petición HTTP tenía dos problemas: el
-usuario veía un botón en «Descargando…» sin saber si la aplicación seguía viva, y
-la petición quedaba abierta un cuarto de hora.
+Bajar el historial tarda minutos: por cada actividad hay una descarga y 0.6 s
+de pausa obligatoria contra el límite de peticiones de Garmin, y un historial
+completo son cientos de actividades. Resolverlo en una sola petición HTTP tenía
+dos problemas: el usuario veía un botón en «Descargando…» sin saber si la
+aplicación seguía viva, y la petición quedaba abierta mucho tiempo.
 
 Así que la petición arranca la tarea y se va; el progreso se consulta aparte. El
 porcentaje es real, no decorativo: `objetivo_horas` se conoce antes de empezar.

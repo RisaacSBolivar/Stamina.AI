@@ -153,7 +153,7 @@ test: test-core test-api test-frontend
 
 ## test-core: la prueba de persistencia contra lo que valido el notebook
 test-core:
-	cd $(BACKEND) && $(PY) -m pytest tests/test_persistencia.py tests/test_entrenamiento.py -v
+	cd $(BACKEND) && $(PY) -m pytest tests/test_persistencia.py tests/test_entrenamiento.py tests/test_lector_fit.py -v
 
 ## test-api: pruebas de humo de los endpoints (fase 2)
 test-api:

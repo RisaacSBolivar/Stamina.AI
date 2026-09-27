@@ -156,7 +156,7 @@ La lógica vive fuera de los endpoints (`backend/app/api/v1/`), en dos capas:
 
 | Qué | Dónde | Qué contiene |
 |---|---|---|
-| Pipeline | `backend/stamina_core/` | La investigación como módulo importable, sin FastAPI: `ingesta.py` (lee `.FIT` y `.GPX`), `variables.py` (terreno y fatiga), `modelos.py` (los cuatro candidatos), `reglas.py` (la regla de capacidad), `pipeline.py` (de historial y ruta a estrategia) y `entrenamiento.py` (escribe el `.FIT`) |
+| Pipeline | `backend/stamina_core/` | La investigación como módulo importable, sin FastAPI: `lector_fit.py` (lee los `.FIT`), `ingesta.py` (los lleva a tramos de 100 m, y lee el `.GPX`), `variables.py` (terreno y fatiga), `modelos.py` (los cuatro candidatos), `reglas.py` (la regla de capacidad), `pipeline.py` (de historial y ruta a estrategia) y `entrenamiento.py` (escribe el `.FIT`) |
 | Servicios | `backend/app/services/` | Lo que une HTTP con el pipeline: procesar el historial, calcular la estrategia y hablar con Garmin |
 | Regla | `backend/modelo/reglas.json` | La tabla que decide el modelo, lo único que la API carga. `metadata.joblib` es el modelo entrenado por la investigación, contra el que se validan las pruebas |
 

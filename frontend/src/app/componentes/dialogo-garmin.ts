@@ -12,7 +12,14 @@
  * Solo se enseña donde el despliegue tiene Garmin encendido (`salud.garmin_habilitado`):
  * la sesión y la descarga necesitan estado en el servidor.
  */
-import { ChangeDetectionStrategy, Component, inject, output, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  output,
+  signal,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 import { ApiService, ErrorApi, type EstadoDescarga } from '../core/api.service';
@@ -20,15 +27,32 @@ import { ConfirmacionService } from '../core/confirmacion.service';
 import { EstadoService } from '../core/estado.service';
 
 /**
- * Cuántas horas se ofrecen descargar.
+ * Cuántas horas se ofrecen descargar, además de «lo justo».
  *
  * Es un intercambio entre espera y personalización, y por eso lo elige la
- * persona en vez de venir fijo: cada actividad cuesta 0.6 s de pausa obligada
- * contra el límite de peticiones de Garmin, así que 135 h son bastantes minutos.
- * El porqué de ese 135 está en `docs/METODOLOGIA.md`; aquí no se afirma nada
- * sobre la curva de capacidad, que para eso se consulta a la API.
+ * persona: cada actividad cuesta una descarga más 0.6 s de pausa obligada contra
+ * el límite de peticiones de Garmin, así que 135 h son bastantes minutos. El
+ * porqué de ese 135 está en `docs/METODOLOGIA.md`.
  */
-const OPCIONES_HORAS = [50, 100, 135];
+const OPCIONES_HORAS_AMPLIAS = [50, 135];
+
+/**
+ * Horas brutas por cada hora que tiene que sobrevivir al control de calidad.
+ *
+ * Con holgura: en el historial del autor se descartaron 32 de 492 archivos.
+ */
+const MARGEN_CONTROL_CALIDAD = 1.3;
+
+/**
+ * Las opciones del selector. La primera es «lo justo para personalizar»: el
+ * umbral que da la API (10 h en maratón, 1.8 h en carrera corta) con margen,
+ * porque son horas brutas. Sin umbral no se inventa ninguno: quedan las amplias.
+ */
+export function opcionesHoras(umbralHoras: number | null): number[] {
+  if (umbralHoras === null) return OPCIONES_HORAS_AMPLIAS;
+  const justo = Math.ceil(umbralHoras * MARGEN_CONTROL_CALIDAD);
+  return [justo, ...OPCIONES_HORAS_AMPLIAS.filter((horas) => horas > justo)];
+}
 
 @Component({
   selector: 'app-dialogo-garmin',
@@ -58,12 +82,14 @@ const OPCIONES_HORAS = [50, 100, 135];
         <select
           id="horas"
           class="campo"
-          [ngModel]="objetivoHoras()"
+          [ngModel]="horasElegidas()"
           (ngModelChange)="objetivoHoras.set(+$event)"
           [disabled]="ocupado()"
         >
-          @for (opcion of opcionesHoras; track opcion) {
-            <option [value]="opcion">{{ opcion }} horas</option>
+          @for (opcion of opciones(); track opcion; let primera = $first) {
+            <option [value]="opcion">
+              {{ opcion }} horas{{ primera && estado.umbral() ? ' · lo justo para personalizar' : '' }}
+            </option>
           }
         </select>
         <p class="mt-2 text-xs" style="color: var(--color-tinta-suave)">
@@ -154,8 +180,10 @@ export class DialogoGarmin {
 
   readonly historialDescargado = output<void>();
 
-  protected readonly opcionesHoras = OPCIONES_HORAS;
-  protected readonly objetivoHoras = signal(OPCIONES_HORAS[OPCIONES_HORAS.length - 1]);
+  protected readonly opciones = computed(() => opcionesHoras(this.estado.umbral()?.horas ?? null));
+  /** Lo que eligió la persona; mientras no elija, la primera opción (la más rápida). */
+  protected readonly objetivoHoras = signal<number | null>(null);
+  protected readonly horasElegidas = computed(() => this.objetivoHoras() ?? this.opciones()[0]);
 
   protected correo = '';
   protected contrasena = '';
@@ -207,7 +235,7 @@ export class DialogoGarmin {
     const seguro = await this.confirmacion.pedir({
       titulo: 'Descargar tu historial de Garmin',
       mensaje:
-        `Se van a descargar hasta ${this.objetivoHoras()} horas de actividades de carrera ` +
+        `Se van a descargar hasta ${this.horasElegidas()} horas de actividades de carrera ` +
         `de tu cuenta de Garmin Connect.`,
       detalle:
         'Garmin obliga a esperar entre descargas, así que puede tardar varios minutos. Los ' +
@@ -225,7 +253,7 @@ export class DialogoGarmin {
     this.estado.entradaEnCurso.set('Descargando tu historial de Garmin…');
     try {
       await this.intentar(async () => {
-        const procesado = await this.api.descargarDeGarmin(id, this.objetivoHoras(), (avance) =>
+        const procesado = await this.api.descargarDeGarmin(id, this.horasElegidas(), (avance) =>
           this.progreso.set(avance),
         );
         // `null` es que la canceló la persona. No es un fallo y no se pinta

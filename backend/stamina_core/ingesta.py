@@ -33,6 +33,7 @@ from .config import (
     V_MIN,
     Rutas,
 )
+from .lector_fit import leer_records
 from .variables import variables_terreno
 
 # Los archivos que bajó el notebook se llaman AAAA-MM-DD_<id>.fit, y de ahí
@@ -63,22 +64,20 @@ def procesar_fit(
     `archivo` puede ser una ruta o bytes (subida por la API). Con bytes hay que
     pasar `nombre`, porque de él sale el identificador de la actividad.
     """
-    import fitparse  # noqa: PLC0415
-
     if isinstance(archivo, (bytes, bytearray)):
         if nombre is None:
             raise ValueError("Al pasar el .FIT como bytes hace falta `nombre`.")
-        fuente = io.BytesIO(archivo)
     else:
-        fuente = str(archivo)
         nombre = nombre if nombre is not None else Path(archivo).stem
 
     try:
-        mensajes = fitparse.FitFile(fuente).get_messages("record")
-        registros = [
-            {campo.name: campo.value for campo in fila if campo.name in CAMPOS_FIT}
-            for fila in mensajes
-        ]
+        # Leer la ruta dentro del try, como antes: un archivo que no se puede
+        # abrir cuenta como ilegible y no tumba el lote entero.
+        if isinstance(archivo, (bytes, bytearray)):
+            datos = bytes(archivo)
+        else:
+            datos = Path(archivo).read_bytes()
+        registros = leer_registros(datos)
     except Exception:
         return ("archivo ilegible", None)
 
@@ -126,6 +125,27 @@ def procesar_fit(
     tramos["actividad"] = nombre
     tramos["fecha"] = _fecha_de(nombre, df)
     return ("ok", tramos)
+
+
+def leer_registros(datos: bytes) -> list[dict]:
+    """
+    Los mensajes `record` de un .FIT, con los campos de `CAMPOS_FIT`.
+
+    Primero con el lector propio (`lector_fit`), que es unas diez veces más
+    rápido. Si no puede —campos de desarrollador, o un archivo que no entiende—
+    lo lee fitparse, que es lo que se usaba antes: así un archivo nunca da un
+    resultado distinto del de siempre, a lo sumo tarda lo de siempre.
+    """
+    try:
+        return leer_records(datos)
+    except Exception:
+        import fitparse  # noqa: PLC0415
+
+        mensajes = fitparse.FitFile(io.BytesIO(datos)).get_messages("record")
+        return [
+            {campo.name: campo.value for campo in fila if campo.name in CAMPOS_FIT}
+            for fila in mensajes
+        ]
 
 
 def _fecha_de(nombre: str, df: pd.DataFrame) -> str:

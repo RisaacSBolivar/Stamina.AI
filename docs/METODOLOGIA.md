@@ -64,8 +64,11 @@ antes de subir nada.
 
 ## Cuántas horas descargar de Garmin
 
-La interfaz ofrece descargar 50, 100 o 135 horas, y por defecto propone 135.
-Ese número no es redondo por casualidad:
+La interfaz ofrece tres topes, y por defecto propone el más rápido: **lo justo
+para personalizar**. Es el umbral que da la regla para la distancia (10 h en
+maratón, 1.8 h en carrera corta) por 1.3, redondeado hacia arriba —13 h en
+maratón—, porque se cuentan horas brutas y el control de calidad descarta
+algunas. Las otras dos son 50 y 135 h. El 135 no es redondo por casualidad:
 
 - La última franja medida, la que da la mejor habilidad (0.303), empieza en
   **124.7 h**.
@@ -82,11 +85,20 @@ corte se nota como mucho una actividad más tarde. Lo ya reunido **no se
 guarda**: para quedarse con menos horas está el selector, que para eso ofrece
 tres topes.
 
-Bajar el tope no es gratis, pero tampoco es una catástrofe: con 100 h se acaba
-en la franja de 79.8 h, con habilidad 0.217 en vez de 0.303. Se gana alrededor
-de un tercio de la espera, porque cada actividad cuesta 0.6 s de pausa
-obligatoria contra el límite de peticiones de Garmin más lo que tarde la
-descarga. Por eso lo elige la persona y no el programa.
+Bajar el tope no es gratis: con 13 h se personaliza con la base física
+(habilidad esperada 0.221) y con 135 h, con el Random Forest (0.303). A cambio,
+la espera es proporcional a las actividades: cada una cuesta su descarga y 0.6 s
+de pausa obligatoria contra el límite de peticiones de Garmin. Por eso lo elige
+la persona y no el programa.
+
+**Leer cada `.FIT` ya no es lo que tarda.** `fitparse` decodificaba el archivo
+entero y era el 92 % del tiempo de procesarlo; en un servidor con una fracción
+de CPU, eso eran minutos por historial. `stamina_core/lector_fit.py` decodifica
+solo los campos que se usan y es unas diez veces más rápido, con la misma salida:
+comparado registro a registro con fitparse en 686 archivos (los 492 del autor,
+los de la demo y los sintéticos), y el reprocesado de los 492 da el mismo
+`splits.parquet` que el notebook. Lo que no replica a propósito (campos de
+desarrollador de Connect IQ) lo sigue leyendo fitparse.
 
 ## La API
 
