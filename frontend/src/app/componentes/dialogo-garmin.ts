@@ -34,7 +34,7 @@ import { EstadoService } from '../core/estado.service';
  * el límite de peticiones de Garmin, así que 135 h son bastantes minutos. El
  * porqué de ese 135 está en `docs/METODOLOGIA.md`.
  */
-const OPCIONES_HORAS_AMPLIAS = [50, 135];
+const OPCIONES_HORAS_AMPLIAS = [50, 100, 135];
 
 /**
  * Horas brutas por cada hora que tiene que sobrevivir al control de calidad.
@@ -292,7 +292,7 @@ export class DialogoGarmin {
         `${avance.horas.toFixed(1)} h) y no se guarda nada.`,
       detalle:
         'Si lo que quieres es menos historial, cancélala y vuelve a lanzarla eligiendo ' +
-        '50 o 100 horas: así el sistema sabe cuántas esperar.',
+        'menos horas: así el sistema sabe cuántas esperar.',
       textoConfirmar: 'Cancelar la descarga',
       textoCancelar: 'Seguir descargando',
     });

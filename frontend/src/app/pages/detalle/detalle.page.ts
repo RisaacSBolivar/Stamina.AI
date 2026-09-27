@@ -104,10 +104,6 @@ import { EstadoService } from '../../core/estado.service';
           </p>
         </div>
       </section>
-
-      <p class="mt-4 text-xs" style="color: var(--color-tinta-suave)">
-        No es consejo médico y no sustituye a un entrenador.
-      </p>
     </div>
   `,
 })

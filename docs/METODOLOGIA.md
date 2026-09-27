@@ -64,11 +64,11 @@ antes de subir nada.
 
 ## Cuántas horas descargar de Garmin
 
-La interfaz ofrece tres topes, y por defecto propone el más rápido: **lo justo
+La interfaz ofrece cuatro topes, y por defecto propone el más rápido: **lo justo
 para personalizar**. Es el umbral que da la regla para la distancia (10 h en
 maratón, 1.8 h en carrera corta) por 1.3, redondeado hacia arriba —13 h en
 maratón—, porque se cuentan horas brutas y el control de calidad descarta
-algunas. Las otras dos son 50 y 135 h. El 135 no es redondo por casualidad:
+algunas. Los otros tres son 50, 100 y 135 h. El 135 no es redondo por casualidad:
 
 - La última franja medida, la que da la mejor habilidad (0.303), empieza en
   **124.7 h**.
@@ -83,10 +83,11 @@ interruptor antes de cada actividad. Se mira antes de bajar el archivo y no
 después, para no gastar contra Garmin una petición que ya nadie quiere; el
 corte se nota como mucho una actividad más tarde. Lo ya reunido **no se
 guarda**: para quedarse con menos horas está el selector, que para eso ofrece
-tres topes.
+cuatro topes.
 
 Bajar el tope no es gratis: con 13 h se personaliza con la base física
-(habilidad esperada 0.221) y con 135 h, con el Random Forest (0.303). A cambio,
+(habilidad esperada 0.221); con 100 h se acaba en la franja de 79.8 h, con el
+Random Forest (0.217), y con 135 h, en la última (0.303). A cambio,
 la espera es proporcional a las actividades: cada una cuesta su descarga y 0.6 s
 de pausa obligatoria contra el límite de peticiones de Garmin. Por eso lo elige
 la persona y no el programa.
