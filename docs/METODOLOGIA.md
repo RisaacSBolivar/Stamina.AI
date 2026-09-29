@@ -23,8 +23,8 @@ capacidad; las cifras de esta página son las de su última corrida.
 
 El sistema decide solo qué modelo usar según lo que el corredor tenga
 registrado, en vez de exigirle un mínimo para funcionar. La tabla se derivó una
-sola vez y viaja dentro del artefacto; la API la consulta y **nunca la
-recalcula**.
+sola vez; la API la lee de `backend/modelo/reglas.json`, extraída del artefacto,
+y **nunca la recalcula**.
 
 Con el historial de la investigación, en régimen de maratón:
 
@@ -94,12 +94,11 @@ la persona y no el programa.
 
 **Leer cada `.FIT` ya no es lo que tarda.** `fitparse` decodificaba el archivo
 entero y era el 92 % del tiempo de procesarlo; en un servidor con una fracción
-de CPU, eso eran minutos por historial. `stamina_core/lector_fit.py` decodifica
-solo los campos que se usan y es unas diez veces más rápido, con la misma salida:
-comparado registro a registro con fitparse en 686 archivos (los 492 del autor,
-los de la demo y los sintéticos), y el reprocesado de los 492 da el mismo
-`splits.parquet` que el notebook. Lo que no replica a propósito (campos de
-desarrollador de Connect IQ) lo sigue leyendo fitparse.
+de CPU, eso eran minutos por historial. `stamina_core/lector_fit.py` es unas
+diez veces más rápido con la misma salida: comparado registro a registro con
+fitparse en 686 archivos (los 492 del autor, los de la demo y los sintéticos), y
+el reprocesado de los 492 da el mismo `splits.parquet` que el notebook. El
+detalle está en [«Rendimiento del parseo»](#rendimiento-del-parseo).
 
 ## La API
 
@@ -199,8 +198,23 @@ Tal como los dejó escritos el notebook en su sección 6.3:
 
 ## Rendimiento del parseo
 
-Los `.FIT` que se suben a mano se parsean repartidos entre procesos. Medido en
-la máquina de desarrollo (12 núcleos, 48 archivos, pool ya caliente):
+Leer los `.FIT` es lo único del producto que crece con el historial, así que se
+midió aparte.
+
+**El lector.** Al principio los leía `fitparse`, que decodifica el archivo
+entero: con los 47 `.FIT` de 12 h y un núcleo, 9.5 s, de ellos 6.8 dentro de
+`fitparse`. `stamina_core/lector_fit.py` lee solo los mensajes `record` y los
+campos que se usan, con la misma salida —comparada registro a registro en 686
+archivos—, y sigue comprobando el CRC, porque son datos que sube el usuario y un
+archivo corrupto se tiene que detectar. Las mismas 12 h, subidas por la API con
+un núcleo, tardan ahora **1.2 s**. Si un archivo trae algo que el lector no
+replica —campos de desarrollador de Connect IQ— o no lo puede leer,
+`procesar_fit` se lo pasa a `fitparse`: el resultado nunca cambia; como mucho,
+tarda lo de antes.
+
+**En paralelo.** Los `.FIT` que se suben a mano se reparten entre procesos. Se
+midió con `fitparse`, en la máquina de desarrollo (12 núcleos, 48 archivos, pool
+ya caliente):
 
 | Modo | Tiempo | Ganancia |
 |---|---|---|
@@ -214,18 +228,10 @@ De ahí salen las dos constantes de `stamina_core/ingesta.py`: seis procesos en
 vez de «todos los que haya», porque a partir de ahí la sobresuscripción pesa más
 que el reparto; y un mínimo de archivos por debajo del cual se queda secuencial,
 porque arrancar el pool cuesta unos segundos (con 3 archivos: 3.3 s en paralelo
-contra 0.87 s secuencial). Con hilos es más lento que no paralelizar: `fitparse`
-es Python puro y el GIL no deja.
-
-**Dónde se va ese tiempo, medido.** Separando las dos mitades de `procesar_fit`
-sobre 8 archivos y 20 336 registros: decodificar el `.FIT` se lleva el
-**99.3 %** y construir el `DataFrame` el **0.7 %**. Es decir, el coste está
-entero dentro de `fitparse` y no hay nada que rascar en el código propio. Se
-probó también leer sin validar el CRC, que da ×1.15, y se descartó: son datos
-que sube el usuario, y cambiar la detección de archivos corruptos por un 13 %
-no compensa. `fitparse` tampoco permite filtrar campos al leer —su
-`get_messages()` solo acepta `name`, `with_definitions` y `as_dict`—, así que
-el filtro por `CAMPOS_FIT` tiene que hacerse después, como ya se hace.
+contra 0.87 s secuencial). Con hilos es más lento que no paralelizar: la lectura
+es Python puro y el GIL no deja. En el servidor publicado, que tiene una
+fracción de núcleo, se fija `STAMINA_PROCESOS_PARSEO=1`: ahí repartir solo
+añadiría el coste de arrancar los procesos.
 
 ### Lo que cuesta una estrategia
 
@@ -240,16 +246,16 @@ caliente de la API (mediana de 5 repeticiones, misma máquina):
 | `compilar_pasos`: de 43 km a los bloques del reloj | 4.8 ms |
 | `compilar_workout_fit`: de bloques a bytes `.FIT` | 0.7 ms |
 
-O sea que **pedir una estrategia entera cuesta unos 150 ms**, y el paso lento
-del producto no es el modelo sino leer el historial: 224 ms por archivo `.FIT`,
-unas 30 veces más que todo lo demás junto. Por eso la barra de progreso está en
-la subida y no en el cálculo.
+O sea que **predecir la estrategia entera cuesta unos 150 ms**. Lo que pesa es
+lo que depende del historial: leerlo (unos 25 ms por `.FIT` con un núcleo) y
+entrenar el modelo de esa persona, que se mide justo debajo. Por eso la barra de
+progreso está en la subida y no en el cálculo.
 
 En la descarga de Garmin **no** se paraleliza, y es deliberado: ahí cada
 actividad cuesta la descarga más 0.6 s de pausa obligatoria contra el límite de
-peticiones, y el parseo es apenas un 13 % del tiempo total. Repartirlo ahorraría
-un 6 % de una espera de diez a veinte minutos, y a cambio complicaría el código
-que habla con una cuenta real.
+peticiones, y con el lector nuevo leer el archivo es una parte pequeña de eso.
+Repartirlo apenas acortaría la espera, y a cambio complicaría el código que habla
+con una cuenta real.
 
 ### Sin demostración: la API solo carga la regla
 
@@ -274,7 +280,7 @@ Hasta el 2026-09-26 ese ajuste se cacheaba junto al historial en el servidor.
 Con la API sin estado no hay dónde guardarlo, así que se entrena en cada
 petición a `POST /estrategia`. Es asumible porque es barato: medido con 1 núcleo,
 0.6 s con la base física (12 h de historial) y 12.7 s en el peor caso, el Random
-Forest con el historial completo del autor. El límite de la función son 300 s.
+Forest con el historial completo del autor.
 
 Un detalle medido al pasar a este flujo: las sesiones sin temperatura se
 rellenan con la mediana del historial que llega. El notebook la calculó sobre

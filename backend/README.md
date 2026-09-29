@@ -7,7 +7,7 @@ API REST sobre `stamina_core`, el pipeline extraído del notebook de investigaci
   ingeniería de variables, los cuatro modelos candidatos, la regla de capacidad
   y el compilador de entrenamiento estructurado. No se toca para "mejorar el
   modelo": cualquier cambio ahí invalida los números medidos.
-- **`app/`** — la capa FastAPI (fase 2).
+- **`app/`** — la capa FastAPI.
 - **`tests/`** — incluye la prueba de persistencia que compara contra la última
   corrida del notebook.
 

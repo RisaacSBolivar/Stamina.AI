@@ -267,8 +267,8 @@ async def test_resumen_con_objetivo_trae_la_capacidad(cliente, fit_de_prueba):
 
 async def test_subir_por_tandas_da_lo_mismo_que_de_una_vez(cliente, fits_sinteticos):
     """
-    El despliegue admite unos 4.5 MB por petición, así que un historial grande se
-    sube por tandas. Juntarlas en el navegador —y repetir un archivo sin querer—
+    Un historial grande se sube por tandas de unos 3.5 MB, por debajo del tope
+    de 4.5 MB por petición que tienen algunas plataformas. Juntarlas en el navegador —y repetir un archivo sin querer—
     tiene que dar el mismo historial que subirlo todo junto.
     """
     muestra = fits_sinteticos[:6]

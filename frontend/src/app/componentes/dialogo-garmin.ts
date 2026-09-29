@@ -277,7 +277,7 @@ export class DialogoGarmin {
   /**
    * Parar una descarga a mitad.
    *
-   * Se confirma porque puede haber quince minutos de espera detras y lo
+   * Se confirma porque puede haber minutos de espera detrás y lo
    * bajado se descarta entero. No se espera al hilo: el bucle que consulta el
    * progreso vera el estado nuevo y cerrara solo.
    */

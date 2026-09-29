@@ -83,8 +83,8 @@ export interface paths {
          * Arrancar la descarga del historial desde Garmin Connect
          * @description Arranca la descarga y devuelve el identificador para seguirla.
          *
-         *     Devuelve 202 y no espera: reunir el historial lleva entre diez y veinte
-         *     minutos, por la pausa obligatoria contra el límite de peticiones de Garmin.
+         *     Devuelve 202 y no espera: reunir el historial lleva minutos, según las horas
+         *     pedidas, por la pausa obligatoria contra el límite de peticiones de Garmin.
          *     El progreso se consulta en `GET /historial/garmin/{tarea_id}`.
          *
          *     Requiere `confirmado=true`: nunca se dispara sola. Lo descargado se parsea en

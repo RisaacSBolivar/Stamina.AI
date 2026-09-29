@@ -156,10 +156,11 @@ export class ApiService {
    * Descarga el historial de Garmin, informando del progreso.
    *
    * El backend responde 202 y hace el trabajo aparte: reunir el historial lleva
-   * entre diez y veinte minutos por la pausa obligatoria contra el límite de
-   * peticiones de Garmin, y una petición HTTP abierta ese rato es frágil. Aquí
-   * se arranca y se pregunta cada pocos segundos, para que la vista pueda
-   * enseñar cuánto lleva. Solo existe en local: necesita estado en el servidor.
+   * minutos, según las horas pedidas, por la pausa obligatoria contra el límite
+   * de peticiones de Garmin, y una petición HTTP abierta ese rato es frágil.
+   * Aquí se arranca y se pregunta cada pocos segundos, para que la vista pueda
+   * enseñar cuánto lleva. Necesita un servidor con estado, por eso la API vive
+   * en un proceso persistente y no en funciones sin servidor.
    *
    * Devuelve `null` si la persona la canceló. Es un caso aparte y no una
    * excepción a propósito: cancelar no es que algo saliera mal, y pintarlo

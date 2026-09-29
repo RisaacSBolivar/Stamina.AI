@@ -9,6 +9,8 @@ historial del propio corredor. La aplicación aprende de sus archivos `.FIT` có
 cede en las cuestas y cómo se fatiga, lo cruza con la altimetría de la ruta
 (`.GPX`) y devuelve el plan de carrera y un entrenamiento listo para el reloj.
 
+**La aplicación está publicada en https://stamina-ai.vercel.app.**
+
 > **Cuando no hay evidencia suficiente, el sistema devuelve ritmo constante y
 > explica el motivo real.** No es consejo médico ni sustituye a un entrenador.
 
@@ -67,7 +69,8 @@ Al abrir se llega a la portada: la persona se presenta si quiere —el nombre se
 queda en la pestaña y solo sirve para saludar— y entra. Después son cinco pasos:
 
 1. **Historial**: sube sus `.FIT`, o los descarga de su cuenta de Garmin
-   Connect. Un medidor enseña cuántas horas tiene frente al escalón a partir del
+   Connect: por defecto, lo justo para personalizar (13 h en maratón), o 50, 100
+   o 135 h. Un medidor enseña cuántas horas tiene frente al escalón a partir del
    cual el sistema personaliza.
 2. **Ruta**: un `.GPX` con el recorrido de la carrera.
 3. **Objetivo**: tiempo y temperatura. El selector «cómo quieres correrla»

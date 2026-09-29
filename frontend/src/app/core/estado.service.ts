@@ -103,7 +103,7 @@ export class EstadoService {
    * historial bajando de Garmin.
    *
    * Vive aquí y no en el componente que la lanza porque la descarga de Garmin
-   * ocurre dentro del diálogo del paso 1 y tarda de diez a veinte minutos:
+   * ocurre dentro del diálogo del paso 1 y tarda minutos:
    * durante ese rato el botón de calcular está cinco pantallas más abajo y no
    * se enteraba de nada. El texto es el que enseña el botón mientras espera.
    */

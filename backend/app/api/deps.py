@@ -51,9 +51,9 @@ def exigir_garmin(config: Annotated[Settings, Depends(get_settings)]) -> None:
     """
     if not config.garmin_habilitado:
         raise GarminNoDisponible(
-            "La conexión con Garmin solo está disponible en la versión local de "
-            "Stamina.AI. Exporta tus actividades desde Garmin Connect en formato "
-            "original (.FIT) y súbelas como archivos."
+            "La conexión con Garmin está apagada en este despliegue de Stamina.AI. "
+            "Exporta tus actividades desde Garmin Connect en formato original (.FIT) "
+            "y súbelas como archivos."
         )
 
 

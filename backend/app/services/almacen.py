@@ -97,8 +97,8 @@ class AlmacenTTL[T]:
 
 # Instancias que usa la API. Se crean al importar y viven con el proceso.
 sesiones_garmin: AlmacenTTL[Any] = AlmacenTTL(ttl_segundos=900, nombre="la sesión de Garmin")
-# Una descarga de Garmin tarda entre diez y veinte minutos y el frontend la va
-# consultando; el resultado tiene que sobrevivir a la espera con holgura.
+# Una descarga de Garmin tarda minutos y el frontend la va consultando; el
+# resultado tiene que sobrevivir a la espera con holgura.
 tareas: AlmacenTTL[Any] = AlmacenTTL(ttl_segundos=3600, nombre="la descarga")
 
 
